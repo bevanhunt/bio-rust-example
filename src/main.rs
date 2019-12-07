@@ -73,7 +73,6 @@ async fn parse(mut payload: Multipart) -> Result<HttpResponse, Error> {
                         }
                     }
                 }
-
             }
         }
     }
