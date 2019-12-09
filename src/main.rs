@@ -110,7 +110,8 @@ fn upload() -> HttpResponse {
     HttpResponse::Ok().body(html)
 }
 
-fn main() -> std::io::Result<()> {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_server=info,actix_web=info");
     std::fs::create_dir_all("./tmp").unwrap();
     let ip = "0.0.0.0:3000";
@@ -129,5 +130,6 @@ fn main() -> std::io::Result<()> {
         )
     })
     .bind(ip)?
-    .run()
+    .start()
+    .await
 }
