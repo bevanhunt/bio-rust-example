@@ -17,16 +17,18 @@ async fn parse(mut payload: Multipart) -> Result<HttpResponse, Error> {
         let content_disposition = field.content_disposition().unwrap();
         let filename = content_disposition.get_filename().unwrap_or_else(|| "");
         if !filename.is_empty() {
+            let content_type = field.content_disposition().unwrap();
+            let filename = content_type.get_filename().unwrap();
             let filepath = format!("./tmp/{}", filename);
-            let mut f = std::fs::File::create(&filepath).unwrap();
+            // File::create is blocking operation, use threadpool
+            let mut f = web::block(|| std::fs::File::create(filepath))
+                .await
+                .unwrap();
             // Field in turn is stream of *Bytes* object
             while let Some(chunk) = field.next().await {
                 let data = chunk.unwrap();
-                let mut pos = 0;
-                while pos < data.len() {
-                    let bytes_written = f.write(&data[pos..])?;
-                    pos += bytes_written;
-                }
+                // filesystem operations are blocking, we have to use threadpool
+                f = web::block(move || f.write_all(&data).map(|_| f)).await?;
             }
         } else {
             while let Some(chunk) = field.next().await {
